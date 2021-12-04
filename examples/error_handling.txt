@@ -1,0 +1,99 @@
+https://docs.ansible.com/ansible/latest/user_guide/playbooks_error_handling.html
+
+
+Ignoring Failed Commands
+
+- name: this will not be counted as a failure
+
+  command: /bin/false
+
+  ignore_errors: yes
+
+
+Controlling what defines failure
+
+	-Check for failure by searching for a word or phrase in the output of a command:
+	
+	- name: Fail task when the command error output prints FAILED
+  
+	  command: /usr/bin/example-command -x -y -z
+
+	  register: command_result
+
+	  failed_when: "'FAILED' in command_result.stderr"
+	
+	-Or based on the return code:
+	- name: Fail task when both files are identical
+
+	  raw: diff foo/file1 bar/file2
+  
+	  register: diff_cmd
+  
+	  failed_when: diff_cmd.rc == 0 or diff_cmd.rc >= 2
+	
+	-You can also combine multiple conditions for failure. This task will fail if both condiions are true:
+	- name: Check if a file exists in temp and fail task if it does
+  
+	  command: ls /tmp/this_should_not_be_here
+
+	  register: result
+  
+	  failed_when:
+    - result.rc == 0
+    - '"No such" not in result.stdout'
+	
+	-Below is an example of "or"
+	failed_when: result.rc == 0 or "No such" not in result.stdout
+
+	
+
+Aborting the play
+	The "any_errors_fatal" option will end the play and prevent any subsequent plays from running. 
+	- hosts: somehosts
+
+	  any_errors_fatal: true
+
+	  roles:
+
+	     - myrole
+
+	
+	
+- hosts: somehosts
+  
+	  tasks:
+ 
+	   - block:
+
+	      - include_tasks: mytasks.yml
+
+	    any_errors_fatal: true
+	
+
+Using Blocks
+	Most of what you can apply to a single task(with the exception of loops) can be applied at the blocks level, which makes it easier to set data or directives common to the tasks. Blocks also introduce the ability to handle errors in a way similar to exceptions in most programming languages. Blocks only deal with 'failed' status of a task. A bad task definition or an unreachable hosts are not 'rescuable' errors:
+	
+tasks:
+
+- name: Handle the error
+  block:
+
+    - debug:
+    msg: 'I execute normally'
+ 
+   - name: i force a failure
+      
+    command: /bin/false
+
+    - debug:
+        
+    msg: 'I never execute, due to the above task failing, :-('
+  
+  rescue:
+
+      - debug:
+        
+        msg: 'I caught an error, can do stuff here to fix it, :-)'
+	
+	
+

@@ -1,0 +1,54 @@
+# first fetch the config
+#https://6uellerbpanda.gitlab.io/posts/2019/27-07-Cisco-Port-Security-and-Ansible/
+- name: get running-config
+  ios_config:
+    backup: true
+    defaults: true
+  register: running_config_backup_result
+
+- name: get port-security list
+  ios_command:
+    commands: "show port-security"
+  register: check_port_security_to_disable
+  changed_when: false
+
+
+# if the interface is in the "show port-security" output, disable it
+- name: disable port-security
+  ios_config:
+    lines:
+      - 'no switchport port-security'
+      - 'no switchport port-security mac-address'
+      - 'no switchport port-security maximum'
+    parents: "interface GigabitEthernet1/0/{{ item.key }}"
+    running_config: "{{ lookup('file', running_config_backup_result['backup_path']) }}"
+  loop: "{{ switch_interface_hash | dict2items }}"
+  when:
+    - '"Gi1/0/" ~ item.key in check_port_security_to_disable.stdout[0]'
+    - item.value.port_security_enabled is defined
+
+
+# configure max allowed MAC addresses
+- name: configure port-security max allowed
+  ios_config:
+    before:
+      - "interface GigabitEthernet1/0/{{ item.key }}"
+      - 'no switchport port-security maximum'
+    lines:
+      - "switchport port-security maximum {{ item.value.device.mac_addr_eth | length }}"
+    parents: "interface GigabitEthernet1/0/{{ item.key }}"
+    running_config: "{{ lookup('file', running_config_backup_result['backup_path']) }}"
+  loop: "{{ switch_interface_hash | dict2items }}"
+  when:
+    - (item.value.port_security_enabled is undefined and item.value.device.mac_addr_eth is defined)
+    - item.value.device.mac_addr_eth | length > 1
+
+# enable port-security
+- name: enable port-security
+  ios_config:
+    lines: 'switchport port-security'
+    parents: "interface GigabitEthernet1/0/{{ item.key }}"
+    running_config: "{{ lookup('file', running_config_backup_result['backup_path']) }}"
+  loop: "{{ switch_interface_hash | dict2items }}"
+  when: item.value.port_security_enabled is undefined
+

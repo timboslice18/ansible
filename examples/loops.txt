@@ -1,0 +1,102 @@
+Standard Loops
+
+Iterating over a simple list
+
+- name: add several users
+  
+  user:
+ 
+     name: "{{ item }}"
+ 
+     state: present
+    
+     groups: "wheel"
+
+  loop:
+
+      - testuser1
+ 
+      - testuser2
+
+
+
+
+You can also define the list in a variables file and refer to it in your ask with the following:
+
+ loop: "{{somelist}}"
+
+
+
+Iterating over a list of hashes
+
+- name: add several users
+  
+  user:
+
+     name: "{{ item.name }}"
+    
+     sate: present
+    groups: "{{ item.groups }}"
+  
+  loop:
+
+     - { name: 'testuser1', groups: 'wheel' }
+ 
+     - { name: 'testuser2', groups: 'root' }
+
+
+
+
+Iterating over a dictionary
+
+- name: create a tag dictionary of non-empty tags
+  
+  set_fact:
+ 
+    tags_dict: "{{ (tags_dict|default({}))|combine({item.key: item.value}) }}"
+  
+  loop: "{{ tags|dict2items }}"
+
+  vars:
+ 
+     tags:
+
+       Environment: dev
+
+       Application: payment
+
+       Another: "{{ doesnotexist|default() }}"
+
+  when: item.value != ""
+
+
+
+
+Retrying a task until a condition is met
+	You can use the "until" keyword to retry a task until a condition is met. The below example runs up to 5 times with a delay of 10 seconds between each attempt. 
+- shell: /usr/bin/foo
+  
+  register: result
+  
+  until: result.stdout.find("all systems go") != -1
+  
+  retries: 5
+  
+  delay: 10
+
+
+
+
+Looping over inventory
+# show all the hosts in the inventory
+
+- debug:
+
+     msg: "{{ item }}"
+  loop: "{{ groups['all'] }}"
+
+# show all the hosts in the current play
+- debug:
+    msg: "{{ item }}"
+  loop: "{{ ansible_play_batch }}"
+

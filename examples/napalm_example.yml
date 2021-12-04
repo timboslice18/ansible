@@ -1,0 +1,108 @@
+
+root@NetworkAutomation-1:/etc/ansible# ls
+ansible.cfg   facts-demo.yml  hosts~     roles             test.yml
+ansible.cfg~  hosts           inventory  show_version.yml
+root@NetworkAutomation-1:/etc/ansible# cat inventory
+[switches:children]
+#eos
+ios
+#vyos
+
+#[eos]
+#eos01.example.net
+
+[ios]
+192.168.122.100
+192.168.122.101
+
+#[vyos]
+#vyos01.example.net
+root@NetworkAutomation-1:/etc/ansible# cat hosts
+# This is the default ansible 'hosts' file.
+#
+# It should live in /etc/ansible/hosts
+#
+#   - Comments begin with the '#' character
+#   - Blank lines are ignored
+#   - Groups of hosts are delimited by [header] elements
+#   - You can enter hostnames or ip addresses
+#   - A hostname/ip can be a member of multiple groups
+
+# Ex 1: Ungrouped hosts, specify before any group headers.
+
+## green.example.com
+## blue.example.com
+## 192.168.100.1
+## 192.168.100.10
+
+# Ex 2: A collection of hosts belonging to the 'webservers' group
+
+## [webservers]
+## alpha.example.org
+## beta.example.org
+## 192.168.1.100
+## 192.168.1.110
+
+# If you have multiple hosts following a pattern you can specify
+# them like this:
+
+## www[001:006].example.com
+
+# Ex 3: A collection of database servers in the 'dbservers' group
+
+## [dbservers]
+##
+## db01.intranet.mydomain.net
+## db02.intranet.mydomain.net
+## 10.25.1.56
+## 10.25.1.57
+
+# Here's another example of host ranges, this time there are no
+# leading 0s:
+
+## db-[99:101]-node.example.com
+
+[routers]
+192.168.122.100
+
+
+root@NetworkAutomation-1:/etc/ansible# cat facts-demo.yml
+---
+- name: "Demonstrate connecting to switches"
+  hosts: switches
+  gather_facts: no
+  vars:
+    ansible_network_os: 'ios'
+    ansible_connection: local
+
+
+  tasks:
+    - name: Test show version
+          ios_command:
+            command: show version
+
+
+root@NetworkAutomation-1:/etc/ansible# cat show_version.yml
+---
+- name: Run show version
+  hosts: switches
+  gather_facts: no
+  vars:
+    ansible_network_os: 'ios'
+    ansible_connection: local
+
+
+  tasks:
+
+    - name: Run command show ip eigrp neighbors
+      ios_command:
+        commands:
+          - show ip eigrp neighbors
+          - show ip bgp summary
+        #wait_for:
+          #- result[0] contains 10.1.1.33
+          #- result[0] contains Et0/0
+          #- search_regex: (\d+\.\d+)
+
+root@NetworkAutomation-1:/etc/ansible# ls
+

@@ -1,0 +1,146 @@
+- name: configure top level configuration
+  ios_config:
+    lines: hostname {{ inventory_hostname }}
+ 
+- name: configure interface settings
+  ios_config:
+    lines:
+      - description test interface
+      - ip address 172.31.1.1 255.255.255.0
+    parents: interface Ethernet1
+ 
+- name: configure ip helpers on multiple interfaces
+  ios_config:
+    lines:
+      - ip helper-address 172.26.1.10
+      - ip helper-address 172.26.3.8
+    parents: "{{ item }}"
+  with_items:
+    - interface Ethernet1
+    - interface Ethernet2
+    - interface GigabitEthernet1
+ 
+- name: configure policer in Scavenger class
+  ios_config:
+    lines:
+      - conform-action transmit
+      - exceed-action drop
+    parents:
+      - policy-map Foo
+      - class Scavenger
+      - police cir 64000
+ 
+- name: load new acl into device
+  ios_config:
+    lines:
+      - 10 permit ip host 192.0.2.1 any log
+      - 20 permit ip host 192.0.2.2 any log
+      - 30 permit ip host 192.0.2.3 any log
+      - 40 permit ip host 192.0.2.4 any log
+      - 50 permit ip host 192.0.2.5 any log
+    parents: ip access-list extended test
+    before: no ip access-list extended test
+    match: exact
+ 
+#https://www.reddit.com/r/networking/comments/dn0m62/ios_config_with_diff_against/
+- name: check the running-config against master config
+  ios_config:
+    diff_against: intended
+    intended_config: "{{ lookup('file', 'master.cfg') }}"
+ 
+- name: check the startup-config against the running-config
+  ios_config:
+    diff_against: startup
+    diff_ignore_lines:
+      - ntp clock .*
+ 
+- name: save running to startup when modified
+  ios_config:
+    save_when: modified
+ 
+- name: for idempotency, use full-form commands
+  ios_config:
+    lines:
+      # - shut
+      - shutdown
+    # parents: int gig1/0/11
+    parents: interface GigabitEthernet1/0/11
+ 
+# Set boot image based on comparison to a group_var (version) and the version
+# that is returned from the `ios_facts` module
+- name: SETTING BOOT IMAGE
+  ios_config:
+    lines:
+      - no boot system
+      - boot system flash bootflash:{{new_image}}
+    host: "{{ inventory_hostname }}"
+  when: ansible_net_version != version
+ 
+- name: render a Jinja2 template onto an IOS device
+  ios_config:
+    backup: yes
+    src: ios_template.j2
+
+
+
+
+ex 1) USING LINES
+
+- name:  Create an access-list
+  ios_config:
+    lines: access-list 180 permit tcp any any eq www
+
+ex 2) USING MULTIPLE LINES
+
+- name: Configure service
+  ios_config:
+    lines:
+      - no service pad
+      - service timestamps debug uptime
+      - service timestamps log uptime
+      - service password-encryption
+
+
+ex 3) USING AFTER
+
+- name: Configure SNMPv3
+  ios_config:
+    lines:
+      - snmp-server group SNMPv3 v3 priv
+    after:
+      - snmp-server user snmpv3 SNMPv3 v3 auth sha AUTHPW123 priv aes 128 Pr1vPW123
+
+
+ex 4) USING PARENTS
+
+- name: Configure Uplink
+  ios_config:
+    parents: "interface GigabitEthernet0/1"
+    lines:
+      - description Uplink
+      - ip address 192.168.0.1 255.255.255.0
+
+ex 5) USING PARENTS
+
+- name: Configure PM POLICY_MAB
+  ios_config:
+    parents:
+      - policy-map type control subscriber POLICY_MAB
+      - event session-started match-all
+      - 10 class always do-until-failure
+    lines:
+      - 10 authenticate using mab aaa authc-list ISE priority 20
+
+ex 6) USING BEFORE
+
+- name: Configure TEST-ACL
+   ios_config:
+     parents: "ip access-list extended TEST-ACL"
+     lines:
+       - permit tcp any any eq smtp
+       - permit tcp any any eq www
+     before: "no ip access-list extended TEST-ACL"
+
+ex 7) USING MATCH AND REPLACE
+
+

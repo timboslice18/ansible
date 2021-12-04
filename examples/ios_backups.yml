@@ -1,0 +1,40 @@
+---
+- hosts: ios_devices
+  connection: local
+ 
+  vars:
+    backup_root: /tmp/backups
+
+    cli:
+      host: "{{ inventory_hostname }}"
+      username: cisco
+      password: cisco
+      transport: cli
+
+  tasks:
+
+  - name: IOS | Gather Backups
+    ios_command:
+      commands: show running
+      provider: "{{ cli }}"
+    register: config
+
+  - name: ensure backup folder is created
+    file:
+      path: "{{ backup_root }}"
+      state: directory
+    run_once: yes
+
+  - name: ensure device folder is created
+    file:
+      path: "{{ backup_root }}/{{ inventory_hostname }}"
+      state: directory
+
+  - name: get timestamp
+    command: date +%Y%m%d
+    register: timestamp
+
+  - copy:
+      content: "{{ config.stdout[0] }}"
+      dest: "{{ backup_root }}/{{ inventory_hostname }}/running-config_{{ timestamp.stdout }}"
+
