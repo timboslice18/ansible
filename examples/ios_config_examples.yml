@@ -84,13 +84,13 @@
 
 
 
-ex 1) USING LINES
+#ex 1) USING LINES
 
 - name:  Create an access-list
   ios_config:
     lines: access-list 180 permit tcp any any eq www
 
-ex 2) USING MULTIPLE LINES
+#ex 2) USING MULTIPLE LINES
 
 - name: Configure service
   ios_config:
@@ -101,7 +101,7 @@ ex 2) USING MULTIPLE LINES
       - service password-encryption
 
 
-ex 3) USING AFTER
+#ex 3) USING AFTER
 
 - name: Configure SNMPv3
   ios_config:
@@ -111,7 +111,7 @@ ex 3) USING AFTER
       - snmp-server user snmpv3 SNMPv3 v3 auth sha AUTHPW123 priv aes 128 Pr1vPW123
 
 
-ex 4) USING PARENTS
+#ex 4) USING PARENTS
 
 - name: Configure Uplink
   ios_config:
@@ -120,7 +120,7 @@ ex 4) USING PARENTS
       - description Uplink
       - ip address 192.168.0.1 255.255.255.0
 
-ex 5) USING PARENTS
+#ex 5) USING PARENTS
 
 - name: Configure PM POLICY_MAB
   ios_config:
@@ -131,7 +131,7 @@ ex 5) USING PARENTS
     lines:
       - 10 authenticate using mab aaa authc-list ISE priority 20
 
-ex 6) USING BEFORE
+#ex 6) USING BEFORE
 
 - name: Configure TEST-ACL
    ios_config:
@@ -140,7 +140,3 @@ ex 6) USING BEFORE
        - permit tcp any any eq smtp
        - permit tcp any any eq www
      before: "no ip access-list extended TEST-ACL"
-
-ex 7) USING MATCH AND REPLACE
-
-
