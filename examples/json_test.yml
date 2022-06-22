@@ -1,0 +1,66 @@
+---
+- hosts: localhost
+  gather_facts: false
+  vars:
+    test_var:
+      bgp_summary_facts:
+      - 65001_10.10.10.1:
+          Data:
+            inq: "0"
+            msgrcvd: "638"
+            msgsent: "424"
+            neighbor: 10.10.10.1
+            uptime: "01:35:54"
+            peer_as: "65001"
+            state: "2"
+            tblver: "0"
+            version: "4"
+      - 65001_10.10.10.2:
+          Data:
+            inq: "0"
+            msgrcvd: "208364"
+            msgsent: "424"
+            neighbor: 10.10.10.2
+            uptime: 3w1d
+            peer_as: "65001"
+            state: "71"
+            tblver: "0"
+            version: "4"
+      - 65002_10.10.20.1:
+          Data:
+            inq: "0"
+            msgrcvd: "0"
+            msgsent: "1"
+            neighbor: 10.10.20.1
+            uptime: never
+            peer_as: "65002"
+            state: Idle
+            tblver: "0"
+            version: "4"
+      - "65010":
+          Data:
+            inq: "0"
+            msgrcvd: "22611"
+            msgsent: "424"
+            neighbor: 10.10.30.1
+            uptime: 2d11h
+            peer_as: "65010"
+            state: "36"
+            tblver: "0"
+            version: "4"
+    changed: false
+    included:
+    - parsers/ios/show_ip_bgp_summary.yml
+
+
+  tasks:
+  - name: print var
+    debug:
+      msg: "bgp: {{ item.keys() | first }}, Neighbor: {{ item[item.keys() | first].Data['neighbor'] }}, uptime: {{ item[item.keys() | first].Data['uptime'] }}"
+    with_items: "{{ test_var.bgp_summary_facts }}"
+
+  - name: print var is down
+    debug:
+      msg: "is down"
+    when: item[item.keys() | first].Data['state'] | int == false
+    with_items: "{{ test_var.bgp_summary_facts }}"
