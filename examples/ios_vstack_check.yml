@@ -1,0 +1,11 @@
+---
+- hosts: switches
+  gather_facts: false
+  tasks:
+
+    - name: Show run include vstack
+      cisco.ios.ios_command:
+        commands: show run | i vstack
+      register: show_run_vstack_output
+      failed_when: "'no vstack' not in show_run_vstack_output.stdout"
+      ignore_errors: true
