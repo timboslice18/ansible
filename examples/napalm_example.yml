@@ -1,0 +1,41 @@
+---
+- hosts: office_routers
+  gather_facts: false
+  tasks:
+
+    - name: Verify outside interface
+      cisco.ios.ios_command:
+        commands: sh run | include ip nat inside source
+      register: cmd_output
+      failed_when: "'0/0/1' not in cmd_output.stdout[0]"
+      #failed_when: "'version 2' not in ssh_output.stdout[0]"
+      #failed_when: "'time-out' not in ssh_output.stdout[0]"
+      #failed_when: "'retries' not in ssh_output.stdout[0]"
+      #failed_when:
+        #("'version 2' not in ssh_output.stdout[0]") or
+        #("'time-out' not in ssh_output.stdout[0]") or
+        #("'retries' not in ssh_output.stdout[0]")
+      #ignore_errors: true
+
+    - name: Verify that wanfirewall is assigned to interface from above
+      cisco.ios.ios_command:
+        commands: show run int gi0/0/1 | inc access-group
+      register: cmd_output_two
+      failed_when: "'wanfirewall' not in cmd_output_two.stdout[0]"
+
+    - name: napalm get_facts
+      napalm_get_facts:
+        optional_args: {'secret': pwdNoQuotes}
+        filter: interfaces_ip
+      register: ip_output
+
+    - set_fact:
+        ip_list: "{{ip_output.ansible_facts.napalm_interfaces_ip['GigabitEthernet0/0/1']['ipv4'] | tojson }}"
+
+    - set_fact:
+        ip_value: "{{item.key}}"
+      with_dict: "{{ip_list}}"
+
+    - name: debug ip value
+      debug:
+        msg: "{{ip_value}}"
