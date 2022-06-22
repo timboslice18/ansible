@@ -1,0 +1,54 @@
+---
+- name: convert interface to structured data
+  hosts: asa
+  gather_facts: false
+  tasks:
+
+
+    - name: Gather facts
+      cisco.asa.asa_acls:
+        #name: Routing_access_in
+        state: gathered
+      register: gather
+
+    - name: Gather only the config and default facts
+      cisco.asa.asa_facts:
+        gather_subset:
+        - config
+      tags: fact_gather
+
+    - name: Gather all legacy facts
+      cisco.asa.asa_facts:
+        gather_subset: all
+      register: fact_subset_all
+      tags: subset_all
+
+    - name: Write each resource to a file
+      become: true
+      delegate_to: localhost
+      copy:
+        content: "{{ fact_subset_all | to_nice_yaml }}"
+        dest: "/etc/ansible/tmp/host_vars/asa/subset_all.yaml"
+      tags: subset_all
+
+    - name: Write each resource to a file
+      become: true
+      delegate_to: localhost
+      copy:
+        content: "{{ fact_subset_all | to_nice_json }}"
+        dest: "/etc/ansible/tmp/host_vars/asa/subset_all.json"
+      tags: subset_all
+
+    - name: Create inventory directory
+      become: true
+      delegate_to: localhost
+      file:
+       path: "/etc/ansible/tmp/host_vars/asa"
+       state: directory
+
+    - name: Write each resource to a file
+      become: true
+      delegate_to: localhost
+      copy:
+        content: "{{ gather.gathered | to_nice_yaml }}"
+        dest: "/etc/ansible/tmp/host_vars/asa/acls.yaml"
