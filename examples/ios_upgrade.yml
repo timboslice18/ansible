@@ -1,0 +1,100 @@
+---
+- name: ios upgrades
+  hosts: switches
+  connection: network_cli
+  gather_facts: no
+
+  vars:
+    - md5_hash: da22dad3905bd79d23f2acdf3c10c33e
+      new_ios_bin: isr4300-universalk9.16.12.05.SPA.bin
+
+    #isr4300-universalk9.16.12.05.SPA.bin
+    #da22dad3905bd79d23f2acdf3c10c33e
+
+
+    #c2960x-universalk9-mz.152-7.E5.bin
+    #283695e9b0667fb7505859746b420384
+
+
+  tasks:
+
+## Tags: hash, boot_sys, backup, write_mem, reload, post
+## Verify md5 Hash
+    - name: CHECK MD5 HASH
+      cisco.ios.ios_command:
+         commands: verify /md5 flash:{{ new_ios_bin }} {{ md5_hash}}
+      register: md5_result
+      #failed_when: "'Error' in md5_result"
+      tags:
+        - hash
+
+
+## Change the Boot Variable to the new image
+
+    - name: Change Boot Variable to new image
+      ios_config:
+        commands:
+          - "no boot system"
+          - "boot system flash:{{ new_ios_bin }}"
+        save_when: always
+      tags:
+        - boot_sys
+
+## Backup Running Config
+    - name: Backup Running Config
+      ios_command:
+        commands: show run
+      register: config
+      tags:
+        - backup
+
+    - name: Save output to backup_dir
+      copy:
+        content: "{{config.stdout[0]}}"
+        dest: "/etc/ansible/tmp/bkp/{{ inventory_hostname }}-config.txt"
+      tags:
+        - backup
+
+## SAVE the Running Config
+
+    - name: Save running config
+      ios_config:
+        save_when: always
+      tags:
+        - write_mem
+
+## Reload the device
+
+    - name: Reload the Device
+      cli_command:
+        command: reload
+        prompt:
+          - confirm
+        answer:
+          - 'y'
+      tags:
+        - reload
+
+## Test Reachability to the device
+
+    - name: Wait for device to come back online
+      wait_for:
+        host: "{{ inventory_hostname }}"
+        port: 22
+        delay: 900
+      delegate_to: localhost
+      tags:
+        - reload
+
+## Check current image
+
+    - name: Check Image Version
+      ios_facts:
+      tags:
+        - post
+
+    - debug:
+        msg:
+          - "Current version is {{ ansible_net_version }}"
+      tags:
+        - post
