@@ -1,0 +1,131 @@
+---
+- hosts: netflow_routers
+  gather_facts: false
+  tasks:
+
+    - name: check ip int brief for source_int
+      cisco.ios.ios_command:
+        commands: show ip int bri | i 0/0/0
+
+    - debug:
+        msg: '{{source_int}}'
+    - debug:
+        msg: '{{inside_int}}'
+    - debug:
+        msg: '{{raw_int}}'
+    - debug:
+        msg: '{{mpls_sub_if}}'
+    - debug:
+        msg: '{{raw_int_desc}}'
+
+    - name: Name-server source interface verification
+      cisco.ios.ios_command:
+        commands: show run | i ntp server
+      register: cmd_output
+      failed_when: "'GigabitEthernet0/0/0' not in cmd_output.stdout[0]"
+      ignore_errors: true
+
+    - name: Verify Routing interface
+      cisco.ios.ios_command:
+        commands: show run interface gi0/0/0
+      register: int_cmd_output
+      failed_when: "'Routing' not in int_cmd_output.stdout[0]"
+      ignore_errors: true
+
+    - name: Verify Outside RAW interface
+      cisco.ios.ios_command:
+        commands: show run interface gi0/0/1 | i description
+      register: int2_cmd_output
+      failed_when: "'RAW' not in int2_cmd_output.stdout[0]"
+      ignore_errors: true
+
+    - name: Verify MPLS Subif interface
+      cisco.ios.ios_command:
+        commands: show run interface gi0/1/0.50 | i description
+      register: int3_cmd_output
+      failed_when: "'ATT' not in int3_cmd_output.stdout[0]"
+      ignore_errors: true
+
+    - name: Verify tunnel interfaces
+      cisco.ios.ios_command:
+        commands: show int desc | i Tu
+      register: int_tunnel_check
+      failed_when: "'Tu2' not in int_tunnel_check.stdout[0]"
+      ignore_errors: true
+
+    - name: Configure snmp ACL 33
+      cisco.ios.ios_config:
+        lines:
+          - access-list 33 remark Kentik SNMP Polling ACL to be used with KProxy
+          - access-list 33 permit 10.1.18.165
+          - access-list 33 permit 10.1.16.52
+
+    - name: Configure snmp user and group
+      cisco.ios.ios_config:
+        lines:
+          - snmp-server group KENTIK_SNMP_GROUP v3 priv access 33
+          - snmp-server user svc-snmp KENTIK_SNMP_GROUP v3 auth sha TKXqFu5zxg priv aes 128 TKXqFu5zxg access 33
+    - name: Configure flow record & SAMPLER
+      cisco.ios.ios_config:
+        lines:
+          - flow record KENTIK_FLOW_RECORD
+          - match ipv4 tos
+          - match ipv4 protocol
+          - match ipv4 source address
+          - match ipv4 destination address
+          - match transport source-port
+          - match transport destination-port
+          - match interface input
+          - match interface output
+          - collect routing source as
+          - collect routing destination as
+          - collect routing next-hop address ipv4
+          - collect transport tcp flags
+          - collect counter bytes
+          - collect counter packets
+          - collect timestamp sys-uptime first
+          - collect timestamp sys-uptime last
+          - sampler KENTIK_NETFLOW_SAMPLER
+          - mode deterministic 1 out-of 100
+
+    #- name: Configure flow sampler
+      #cisco.ios.ios_config:
+        #lines:
+          #- sampler KENTIK_NETFLOW_SAMPLER
+          #- mode deterministic 1 out-of 100
+
+    - name: Configure flow exporter
+      cisco.ios.ios_config:
+        lines:
+          - flow exporter KENTIK_EXPORT
+          - description KENTIK_FLOW_PROXY_KPROXY
+          - destination 10.1.18.165
+          - source {{source_int}}
+          - transport udp 9995
+
+    - name: Configure flow monitor
+      cisco.ios.ios_config:
+        lines:
+          - flow monitor KENTIK_MONITOR
+          - exporter KENTIK_EXPORT
+          - cache timeout inactive 10
+          - cache timeout active 60
+          - record KENTIK_FLOW_RECORD
+
+    - name: Assign flow monitor to INSIDE interface
+      cisco.ios.ios_config:
+        lines:
+          - interface {{inside_int}}
+          - ip flow monitor KENTIK_MONITOR sampler KENTIK_NETFLOW_SAMPLER input
+
+    - name: Assign flow monitor to RAW INTERNET interface
+      cisco.ios.ios_config:
+        lines:
+          - interface {{raw_int}}
+          - ip flow monitor KENTIK_MONITOR sampler KENTIK_NETFLOW_SAMPLER input
+
+    - name: Assign flow monitor to MPLS Sub-interface
+      cisco.ios.ios_config:
+        lines:
+          - interface {{mpls_sub_if}}
+          - ip flow monitor KENTIK_MONITOR sampler KENTIK_NETFLOW_SAMPLER input
