@@ -55,7 +55,7 @@
       tags:
         - backup
 
-## SAVE the Running Config
+## Save the Running Config
 
     - name: Save running config
       ios_config:
