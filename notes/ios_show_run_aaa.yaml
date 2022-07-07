@@ -1,0 +1,13 @@
+---
+- example: server-private x.x.x.x key y zzzzzzz
+  getval: ' server-private (?P<server_ip>\S+) key (?P<encryption_level>\S+) (?P<tacacs_key_value>\S+)'
+  result:
+    "{{ server_ip }}":
+      tacacs_key_value: "{{ tacacs_key_value }}"
+      encryption_level: "{{ encryption_level }}"
+  shared: true
+
+- example: ip tacacs source-interface xxx
+  getval: ' ip tacacs source-interface (?P<tacacs_source_if>\S+)'
+  result:
+    tacacs_source_if: "{{ tacacs_source_if }}"
