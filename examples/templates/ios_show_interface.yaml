@@ -1,0 +1,45 @@
+---
+- example: Ethernet1/1 is up
+  getval: '(?P<name>\S+) is (?P<oper_state>\S+)'
+  result:
+    "{{ name }}":
+      name: "{{ name }}"
+      state:
+        operating: "{{ oper_state }}"
+  shared: true
+
+- example: admin state is up, Dedicated Interface
+  getval: 'admin state is (?P<admin_state>\S+),'
+  result:
+    "{{ name }}":
+      name: "{{ name }}"
+      state:
+        admin: "{{ admin_state }}"
+
+- example: "  Hardware is Gigabit Ethernet, address is xxxx.xxxx.xxxx (bia xxxx.xxxx.xxxx)"
+  getval: '\s+Hardware is (?P<hardware>.*), address is (?P<mac>\S+)'
+  result:
+    "{{ name }}":
+      hardware: "{{ hardware }}"
+      mac_address: "{{ mac }}"
+
+- example: "  MTU 1500 bytes, BW 1000000 Kbit/sec, DLY 10 usec,"
+  getval: '\s+MTU (?P<mtu>.*), BW (?P<bw>.*), DLY (?P<dly>\S+)'
+  result:
+    "{{ name }}":
+      mtu: "{{ mtu }}"
+      bw: "{{ bw }}"
+      dly: "{{ dly }}"
+
+- example: "   Description: xxxx"
+  getval: '\s+Description: (?P<description>\S+)'
+  result:
+    "{{ name }}":
+      description: "{{ description }}"
+
+- example: "Internet address is x.x.x.x/yy"
+  getval: '\s+Internet address is (?P<ip_address>\S+)./(?P<subnet_mask>\S+)'
+  result:
+    "{{ name }}":
+      ip_address: "{{ ip_address }}"
+      subnet_mask: "{{ subnet_mask }}"

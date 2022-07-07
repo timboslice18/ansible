@@ -1,0 +1,25 @@
+---
+- hosts: ios_fact_test
+  gather_facts: false
+  tasks:
+
+  - name: "Run command and parse with native"
+    ansible.utils.cli_parse:
+      command: show ip bgp nei
+      parser:
+        name: ansible.netcommon.native
+      set_fact: bgp
+
+  - debug:
+      msg: " {{ bgp | to_nice_yaml }} "
+
+#Copy and create raw YAML file with output of ansible_facts
+  - name: Create YAML file
+    copy:
+      content: |
+        {{ bgp | to_nice_yaml }}
+      dest:  /etc/ansible/host_vars/{{inventory_hostname}}_show_ip_bgp_nei.yml
+
+  #- name: debug
+    #debug:
+      #msg: " {{ interfaces.Vlan4.description }}"
