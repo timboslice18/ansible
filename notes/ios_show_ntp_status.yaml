@@ -1,8 +1,0 @@
----
-- example: Clock is synchronized, stratum 3, reference is x.x.x.x
-  getval: 'Clock is synchronized, stratum (?P<stratum_level>\S+), reference is (?P<ntp_server>\S+)'
-  result:
-    "{{ ntp_server }}":
-      #ntp_server: "{{ ntp_server }}"
-      stratum_level: "{{ stratum_level }}"
-  shared: true

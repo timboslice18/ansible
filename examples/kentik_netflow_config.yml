@@ -57,14 +57,13 @@
       cisco.ios.ios_config:
         lines:
           - access-list 33 remark Kentik SNMP Polling ACL to be used with KProxy
-          - access-list 33 permit 10.1.18.165
-          - access-list 33 permit 10.1.16.52
+          - access-list 33 permit {{item.kentik_server_ip}} 
 
     - name: Configure snmp user and group
       cisco.ios.ios_config:
         lines:
           - snmp-server group KENTIK_SNMP_GROUP v3 priv access 33
-          - snmp-server user svc-snmp KENTIK_SNMP_GROUP v3 auth sha TKXqFu5zxg priv aes 128 TKXqFu5zxg access 33
+          - snmp-server user svc-snmp KENTIK_SNMP_GROUP v3 auth sha {{item.snmp_password}} priv aes 128 {{item.snmp_password}} access 33
     - name: Configure flow record & SAMPLER
       cisco.ios.ios_config:
         lines:
@@ -99,7 +98,7 @@
         lines:
           - flow exporter KENTIK_EXPORT
           - description KENTIK_FLOW_PROXY_KPROXY
-          - destination 10.1.18.165
+          - destination {{item.snmp_password}}
           - source {{source_int}}
           - transport udp 9995
 
