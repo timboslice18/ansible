@@ -1,0 +1,40 @@
+!
+hostname {{inventory_hostname}}
+!
+boot-start-marker
+boot-end-marker
+!
+!
+username {{local_username}} privilege 15 secret 5 {{local_password}}
+aaa new-model
+!
+!# Config Omitted
+!
+{% for intf in Interfaces %}
+interface {{intf}}
+{% if Interfaces[intf].sw_mode is defined %}
+{% if Interfaces[intf].sw_mode == 'trunk' %}
+ description {{Interfaces[intf].desc}}
+ switchport mode trunk
+{% else %}
+{% if Interfaces[intf].pf_edge is defined %}
+ description {{Interfaces[intf].desc}}
+ switchport mode access
+ switchport access vlan {{Interfaces[intf].sw_vlan}}
+ switchport voice vlan {{Interfaces[intf].sw_voice_vlan}}
+ spanning-tree portfast
+{% else %}
+ description {{Interfaces[intf].desc}}
+ switchport mode access
+ switchport access vlan {{Interfaces[intf].sw_vlan}}
+ switchport voice vlan {{Interfaces[intf].sw_voice_vlan}}
+{% endif %}
+{% endif %}
+{% elif Interfaces[intf].ip_address is defined %}
+ ip address {{Interfaces[intf].ip_address}} {{Interfaces[intf].subnet_mask}}
+ ip helper-address {{ip_helper_address}}
+ no ip redirects
+ no ip proxy-arp
+{% endif %}
+{% endfor %}
+

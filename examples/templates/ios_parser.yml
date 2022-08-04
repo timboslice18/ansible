@@ -1,0 +1,171 @@
+---
+- hosts: ios_fact_test_august
+  gather_facts: false
+  tasks:
+
+  - name: GATHER FACTS
+    cisco.ios.ios_facts:
+      gather_subset:
+        - all
+
+  - name: ROUTER BLOCK
+    block:
+      - name: "Run show interface"
+        ansible.utils.cli_parse:
+          command: show interface
+          parser:
+            name: ansible.netcommon.native
+          set_fact: interfaces
+        ignore_errors: true
+
+      #- name: Insert/Update /etc/ansible/host_vars/{{inventory_hostname}}
+        #blockinfile:
+          #path: /etc/ansible/host_vars/{{inventory_hostname}}.yml
+          #block: |
+            #{{ interfaces | to_nice_yaml}}
+          #marker: "<!-- {mark} Adding Interfaces -->"
+        #ignore_errors: true
+
+      - name: "Run show ntp status"
+        ansible.utils.cli_parse:
+          command: show ntp status
+          parser:
+            name: ansible.netcommon.native
+          set_fact: show_ntp_status
+        ignore_errors: true
+
+      - name: "Run sh ip bgp nei"
+        ansible.utils.cli_parse:
+          command: show ip bgp nei
+          parser:
+            name: ansible.netcommon.native
+          set_fact: bgp
+        ignore_errors: true
+
+      - name: "Run show run sec interface"
+        ansible.utils.cli_parse:
+          command: show run | sec interface
+          parser:
+            name: ansible.netcommon.native
+          set_fact: vlan_output
+        ignore_errors: true
+
+      - name: "Run show run sec line"
+        ansible.utils.cli_parse:
+          command: show run | sec line
+          parser:
+            name: ansible.netcommon.native
+          set_fact: show_line_output_value
+        ignore_errors: true
+
+      - name: "Run show ip access list"
+        cisco.ios.ios_acls:
+          config:
+          state: gathered
+        register: gathered_acls
+
+      - name: Create host_vars file
+        ansible.builtin.file:
+          path: /etc/ansible/host_vars/{{inventory_hostname}}.yml
+          state: touch
+
+      - name: Insert/Update /etc/ansible/host_vars/{{inventory_hostname}} - Routers
+        blockinfile:
+          path: /etc/ansible/host_vars/{{inventory_hostname}}.yml
+          block: |
+            {{ show_ntp_status | to_nice_yaml }}
+            {{ interfaces | to_nice_yaml }}
+            {{ bgp | to_nice_yaml }}
+            {{ gathered_acls | to_nice_yaml }}
+
+      - name: Remove any empty brackets (ntp for example)
+        replace:
+          path: /etc/ansible/host_vars/{{inventory_hostname}}.yml
+          regexp: '(^{})'
+          replace: ''
+        ignore_errors: true
+
+      - name: Remove any empty brackets (ntp for example)
+        replace:
+          path: /etc/ansible/host_vars/{{inventory_hostname}}.yml
+          regexp: '(^\n)'
+          replace: ''
+        ignore_errors: true
+    when: (ansible_facts['net_model'] == "ISR4351/K9") or (ansible_facts['net_model'] == "ISR4451-X/K9") or (ansible_facts['net_model'] == "ISR4331/K9") or (ansible_facts['net_model'] == "ISR4321/K9")
+    #when: ansible_facts['net_model'] == "ISR4351/K9"
+    ignore_errors: true
+
+
+  - name: SWITCH BLOCK
+    block:
+      - name: "Run show interface"
+        ansible.utils.cli_parse:
+          command: show interface
+          parser:
+            name: ansible.netcommon.native
+          set_fact: interfaces
+
+      #- name: Insert/Update /etc/ansible/host_vars/{{inventory_hostname}}
+        #blockinfile:
+          #path: /etc/ansible/host_vars/{{inventory_hostname}}.yml
+          #block: |
+            #{{ interfaces | to_nice_yaml}}
+          #marker: "<!-- {mark} Adding Interfaces -->"
+        #ignore_errors: true
+
+      - name: "Run show ntp status"
+        ansible.utils.cli_parse:
+          command: show ntp status
+          parser:
+            name: ansible.netcommon.native
+          set_fact: show_ntp_status
+
+      - name: "Run show run sec interface"
+        ansible.utils.cli_parse:
+          command: show run | sec interface
+          parser:
+            name: ansible.netcommon.native
+          set_fact: vlan_output
+
+      - name: "Run show run sec line"
+        ansible.utils.cli_parse:
+          command: show run | sec line
+          parser:
+            name: ansible.netcommon.native
+          set_fact: show_line_output_value
+
+      - name: "Run show ip access list"
+        cisco.ios.ios_acls:
+          config:
+          state: gathered
+        register: gathered_acls
+
+      - name: Create host_vars file
+        ansible.builtin.file:
+          path: /etc/ansible/host_vars/{{inventory_hostname}}.yml
+          state: touch
+
+      - name: Insert/Update /etc/ansible/host_vars/{{inventory_hostname}}.yml - Switches
+        blockinfile:
+          path: /etc/ansible/host_vars/{{inventory_hostname}}.yml
+          block: |
+            {{ show_ntp_status | to_nice_yaml }}
+            {{ interfaces | to_nice_yaml }}
+            {{ vlan_output | to_nice_yaml }}
+
+      - name: Remove any empty brackets (ntp for example)
+        replace:
+          path: /etc/ansible/host_vars/{{inventory_hostname}}.yml
+          regexp: '(^{})'
+          replace: ''
+        ignore_errors: true
+
+      - name: Remove any empty brackets (ntp for example)
+        replace:
+          path: /etc/ansible/host_vars/{{inventory_hostname}}.yml
+          regexp: '(^\n)'
+          replace: ''
+        ignore_errors: true
+
+    when: (ansible_facts['net_model'] == "WS-C2960XR-48FPS-I") or (ansible_facts['net_model'] == "WS-C3750G-48PS") or (ansible_facts['net_model'] == "WS-C3750X-48") or (ansible_facts['net_model'] == "WS-C2960X-48TS-L")
+    ignore_errors: true
