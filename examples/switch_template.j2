@@ -10,28 +10,28 @@ aaa new-model
 !
 !# Config Omitted
 !
-{% for intf in Vlans %}
+{% for intf in Interfaces %}
 interface {{intf}}
-{% if Vlans[intf].sw_mode is defined %}
-{% if Vlans[intf].sw_mode == 'trunk' %}
- description {{Vlans[intf].desc}}
+{% if Interfaces[intf].sw_mode is defined %}
+{% if Interfaces[intf].sw_mode == 'trunk' %}
+ description {{Interfaces[intf].desc}}
  switchport mode trunk
 {% else %}
-{% if Vlans[intf].pf_edge is defined %}
- description {{Vlans[intf].desc}}
+{% if Interfaces[intf].pf_edge is defined %}
+ description {{Interfaces[intf].desc}}
  switchport mode access
- switchport access vlan {{Vlans[intf].sw_vlan}}
- switchport voice vlan {{Vlans[intf].sw_voice_vlan}}
+ switchport access vlan {{Interfaces[intf].sw_vlan}}
+ switchport voice vlan {{Interfaces[intf].sw_voice_vlan}}
  spanning-tree portfast
 {% else %}
- description {{Vlans[intf].desc}}
+ description {{Interfaces[intf].desc}}
  switchport mode access
- switchport access vlan {{Vlans[intf].sw_vlan}}
- switchport voice vlan {{Vlans[intf].sw_voice_vlan}}
+ switchport access vlan {{Interfaces[intf].sw_vlan}}
+ switchport voice vlan {{Interfaces[intf].sw_voice_vlan}}
 {% endif %}
 {% endif %}
-{% elif Vlans[intf].ip_address is defined %}
- ip address {{Vlans[intf].ip_address}} {{Vlans[intf].subnet_mask}}
+{% elif Interfaces[intf].ip_address is defined %}
+ ip address {{Interfaces[intf].ip_address}} {{Interfaces[intf].subnet_mask}}
  ip helper-address {{ip_helper_address}}
  no ip redirects
  no ip proxy-arp
